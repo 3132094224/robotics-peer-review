@@ -141,7 +141,8 @@
       $("resetDialog").close(); $("adminSearch").value = ""; $("sortSelect").value = "order"; setTab("summary");
       await refresh();
     } catch (error) {
-      errorAt("resetError", new Error(error.message + "。如请求超时，请取消并刷新后台核对结果后再决定是否重试。"));
+      const uncertain = /超时|无法连接|Failed to fetch|NetworkError/.test(error.message);
+      errorAt("resetError", new Error(error.message + (uncertain ? " 请取消并刷新后台核对结果后再决定是否重试。" : "")));
     } finally {
       resetting = false; $("confirmReset").disabled = false; $("cancelReset").disabled = false;
       $("resetButton").disabled = !dashboard?.round_id; $("confirmReset").textContent = "确认清空";

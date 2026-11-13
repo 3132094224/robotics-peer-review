@@ -105,7 +105,8 @@ begin
   select round_id into v_current_round from public.review_settings where singleton for update;
   if not found then raise exception '活动尚未初始化'; end if;
   if p_expected_round_id is distinct from v_current_round then raise exception '评分轮次已更新，请刷新后台后重试'; end if;
-  delete from public.review_ballots;
+  delete from public.review_ballots b
+    where b.rater_id in (select s.id from public.review_students s);
   get diagnostics v_deleted = row_count;
   v_new_round := gen_random_uuid()::text;
   update public.review_settings set round_id = v_new_round, accepting = true where singleton;
