@@ -59,7 +59,6 @@
     }
     return [...rows.values()].map(row => ({ ...row, average: row.count ? row.total / row.count : null }));
   }
-  function normalizeCode(code) { return String(code || "").toUpperCase().replace(/[\s-]/g, ""); }
   function csv(headers, rows) {
     const escape = value => {
       let s = value == null ? "" : String(value);
@@ -68,7 +67,7 @@
     };
     return "\uFEFF" + [headers, ...rows].map(row => row.map(escape).join(",")).join("\r\n");
   }
-  const api = { BANDS, quotas, bandIndex, validate, summarize, normalizeCode, csv };
+  const api = { BANDS, quotas, bandIndex, validate, summarize, csv };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ReviewRules = api;
 })(typeof window === "undefined" ? globalThis : window);

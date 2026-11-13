@@ -5,7 +5,7 @@
   const roster = window.REVIEW_ROSTER, students = roster.students;
   const demo = new URLSearchParams(location.search).get("demo") === "1";
   const demoBallotsKey = "robotics-review.demo.ballots." + roster.version;
-  let me = null, code = "", scores = {}, submitting = false, saveAvailable = true;
+  let me = null, scores = {}, submitting = false, saveAvailable = true;
   let toastTimer;
   const rowElements = new Map();
   const draftKey = () => "robotics-review.draft." + roster.version + "." + (demo ? "demo." : "live.") + me.id;
@@ -32,7 +32,7 @@
     $("identitySection").classList.remove("hidden");
     $("scoringSection").classList.add("hidden");
     $("successSection").classList.add("hidden");
-    me = null; code = ""; scores = {}; $("codeInput").value = "";
+    me = null; scores = {};
     $("identityError").classList.add("hidden");
   }
   function success(result) {
@@ -43,9 +43,8 @@
     $("receiptTime").textContent = result.submitted_at ? new Date(result.submitted_at).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false }) : "已记录";
     $("receiptCode").textContent = result.receipt || "已记录";
     $("successEyebrow").textContent = demo ? "本机体验 · 已模拟提交" : "评价已提交";
-    $("successDescription").textContent = demo ? "体验数据仅保存在此浏览器，不计入正式评分。" : "你的评分已完整记录，无需重复提交。";
-    try { localStorage.removeItem(draftKey()); } catch (_) {}
-    code = ""; $("codeInput").value = "";
+    $("successDescription").textContent = demo ? "体验数据只保存在此浏览器，可以继续修改，不计入正式评分。" : "你的评分已保存，可继续修改并重新提交，后台以最后一次为准。";
+    saveDraft();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function renderStudents() {
@@ -130,7 +129,6 @@
   $("identityForm").addEventListener("submit", async event => {
     event.preventDefault(); $("identityError").classList.add("hidden");
     const student = students.find(s => s.id === $("identitySelect").value); if (!student) return;
-    const inputCode = R.normalizeCode($("codeInput").value);
     $("startButton").disabled = true; $("startButton").textContent = "正在确认…";
     try {
       let status;
@@ -140,13 +138,11 @@
         try { accepting = localStorage.getItem(demoBallotsKey + ".closed") !== "1"; } catch (_) {}
         status = { accepting, roster_version: roster.version, submitted: !!ballot, ...ballot };
       } else {
-        if (!/^[A-F0-9]{16}$/.test(inputCode)) throw new Error("请输入老师发给你的 16 位评价码，可以保留分隔横线。");
-        status = await API.identity(student.id, inputCode);
+        status = await API.identity(student.id);
       }
       if (status.roster_version !== roster.version) throw new Error("名单版本不一致，请刷新页面；仍不一致时请联系老师。");
       if (!demo && JSON.stringify(status.quotas) !== JSON.stringify(R.quotas(students.length))) throw new Error("评分规则与后台不一致，请联系老师。");
-      me = student; code = inputCode;
-      if (status.submitted) { success(status); return; }
+      me = student;
       if (!status.accepting) throw new Error("本次互评已暂停提交，请联系老师。");
       const draft = readStorage(draftKey(), {}); scores = {};
       for (const s of students) if (R.bandIndex(draft[s.id]) >= 0) scores[s.id] = draft[s.id];
@@ -154,15 +150,16 @@
       $("currentName").textContent = me.name;
       $("studentSearch").value = ""; $("onlyUnrated").checked = false;
       renderStudents(); update();
-      $("identitySection").classList.add("hidden"); $("scoringSection").classList.remove("hidden");
-      $("codeInput").value = "";
-      if (Object.keys(scores).length) toast("已恢复你在这台设备上保存的评分草稿。");
-    } catch (error) { code = ""; showError("identityError", error); }
+      $("identitySection").classList.add("hidden"); $("successSection").classList.add("hidden"); $("scoringSection").classList.remove("hidden");
+      if (status.submitted) toast("你已经提交过，可以继续修改；再次提交后以最新评分为准。");
+      else if (Object.keys(scores).length) toast("已恢复你在这台设备上保存的评分草稿。");
+    } catch (error) { showError("identityError", error); }
     finally { $("startButton").disabled = !demo && !API.ready; $("startButton").textContent = "开始评价 →"; }
   });
   $("studentSearch").addEventListener("input", filterStudents);
   $("onlyUnrated").addEventListener("change", filterStudents);
   $("switchButton").addEventListener("click", resetSections); $("doneSwitch").addEventListener("click", resetSections);
+  $("doneEdit").addEventListener("click", () => $("identityForm").requestSubmit());
   $("clearButton").addEventListener("click", () => {
     if (!confirm("清空当前身份的全部评分草稿？")) return;
     scores = {}; for (const { select } of rowElements.values()) select.value = ""; saveDraft(); update();
@@ -189,9 +186,10 @@
       let result;
       if (demo) {
         const ballots = readStorage(demoBallotsKey, []); const existing = ballots.find(b => b.rater_id === me.id);
-        result = existing || { rater_id: me.id, scores: { ...scores }, submitted_at: new Date().toISOString(), receipt: "DEMO-" + Date.now().toString(36) };
-        if (!existing) localStorage.setItem(demoBallotsKey, JSON.stringify([...ballots, result]));
-      } else result = await API.submit(me.id, code, roster.version, scores);
+        result = { rater_id: me.id, scores: { ...scores }, submitted_at: new Date().toISOString(), receipt: "DEMO-" + Date.now().toString(36) };
+        const updated = existing ? ballots.map(b => b.rater_id === me.id ? result : b) : [...ballots, result];
+        localStorage.setItem(demoBallotsKey, JSON.stringify(updated));
+      } else result = await API.submit(me.id, roster.version, scores);
       $("reviewDialog").close(); success(result);
     } catch (error) { showError("submitError", error); }
     finally { submitting = false; $("confirmSubmit").disabled = false; $("cancelReview").disabled = false; $("confirmSubmit").textContent = "确认提交"; }
@@ -202,8 +200,7 @@
   $("classCount").textContent = students.length; $("courseTitle").textContent = window.REVIEW_CONFIG.courseTitle;
   for (const s of students) { const option = document.createElement("option"); option.value = s.id; option.textContent = `${String(s.order).padStart(2, "0")}　${s.name}`; $("identitySelect").append(option); }
   if (demo) {
-    $("modeNotice").textContent = "本机体验：无需评价码，数据只在当前浏览器中保存，不计入正式评价。"; $("modeNotice").classList.remove("hidden");
-    $("codeInput").required = false; $("codeInput").placeholder = "体验模式不需要评价码"; $("codeInput").disabled = true;
+    $("modeNotice").textContent = "本机体验：数据只在当前浏览器中保存，不计入正式评价。"; $("modeNotice").classList.remove("hidden");
     document.querySelectorAll('a[href="admin.html"]').forEach(a => a.href = "admin.html?demo=1");
   } else if (!API.ready) {
     $("setupHint").classList.remove("hidden"); $("startButton").disabled = true;

@@ -67,4 +67,3 @@ test('CSV 带 BOM、正确转义并防止公式注入', () => {
   assert.ok(csv.includes('"\'=SUM(1,2)"'));
   assert.ok(csv.includes('"含""引号,姓名"'));
 });
-test('评价码容许空格、横线、小写输入',()=>assert.equal(R.normalizeCode('abcd-1234  efab-5678'),'ABCD1234EFAB5678'));

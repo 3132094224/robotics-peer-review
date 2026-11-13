@@ -26,7 +26,7 @@
       }
       return data;
     } catch (error) {
-      if (error.name === "AbortError") throw new Error("连接超时。已保留草稿，请检查网络后重试；若已提交成功，重试会返回原收据。");
+      if (error.name === "AbortError") throw new Error("连接超时。已保留草稿，请检查网络后重试；后台只保留你最后一次完整提交，不重复计票。");
       if (error instanceof TypeError) throw new Error("暂时无法连接评分服务。已保留草稿，请检查网络后重试。");
       throw error;
     } finally { clearTimeout(timeout); }
@@ -42,9 +42,9 @@
   }
   window.ReviewAPI = {
     ready,
-    identity: (id, code) => rpc("review_identity", { p_rater_id: id, p_code: code }),
-    submit: (id, code, version, scores) => rpc("review_submit", {
-      p_rater_id: id, p_code: code, p_roster_version: version, p_scores: scores,
+    identity: id => rpc("review_identity", { p_rater_id: id }),
+    submit: (id, version, scores) => rpc("review_submit", {
+      p_rater_id: id, p_roster_version: version, p_scores: scores,
     }),
     async signIn(email, password) {
       const data = await request("/auth/v1/token?grant_type=password", { body: { email, password } });
