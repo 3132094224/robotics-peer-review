@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1958da">
+  <meta name="description" content="智能机器人导航与控制课程全班互评。">
+  <title>课程全班互评</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">评</span><span>课程评价<span class="brand-en">CLASS REVIEW</span></span></a><a class="subtle-link" href="admin.html">教师后台 <span aria-hidden="true">↗</span></a></header>
+  <main class="container">
+    <section class="intro"><div><p class="eyebrow" id="courseTitle">智能机器人导航与控制</p><h1>认真评价，<br class="mobile-only">让每份付出被看见。</h1><p class="lead">为全班每位同学打分，也包括自己。请根据课程中的实际表现，独立、客观地完成评价。</p></div><div class="intro-number"><strong id="classCount">67</strong><span>位同学 · 全员互评</span></div></section>
+    <div class="notice hidden" id="modeNotice" role="status"></div>
+    <section class="card identity-card" id="identitySection">
+      <div class="section-heading"><span class="step-number">01</span><div><h2>确认你的身份</h2><p>选中自己的姓名，输入老师发给你的个人评价码。</p></div></div>
+      <form id="identityForm">
+        <div class="form-grid"><label>你的姓名<select id="identitySelect" required><option value="">请选择自己的姓名</option></select></label><label>个人评价码<input id="codeInput" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="老师单独发给你的 16 位评价码" required maxlength="32"></label></div>
+        <div class="identity-footer"><p class="muted">每人提交一份完整问卷，提交后不再修改。</p><button class="button" id="startButton" type="submit">开始评价 <span aria-hidden="true">→</span></button></div>
+        <p class="error hidden" id="identityError" role="alert"></p>
+      </form>
+      <div class="setup-hint hidden" id="setupHint"><strong>网页已就绪，评分服务尚未配置</strong><p>正式使用前，请按部署说明连接你自己的 Supabase。现在可以先体验填写与后台统计。</p><a class="button secondary" href="?demo=1">进入本机体验</a></div>
+    </section>
+    <section id="scoringSection" class="hidden">
+      <div class="scoring-top"><div><p class="eyebrow">正在以 <strong id="currentName"></strong> 的身份评价</p><h2>把合适的分数，给每位同学。</h2></div><button class="text-button" id="switchButton">切换身份</button></div>
+      <div class="quota-sticky"><div class="quota-grid" id="quotaGrid"></div><div class="progress-line"><span id="progressText" aria-live="polite">已评 0 / 67</span><span class="save-state" id="saveState">草稿会保存在当前浏览器</span></div><div class="progress-track"><div id="progressFill"></div></div></div>
+      <div class="toolbar"><label class="search-label"><span class="sr-only">搜索姓名或序号</span><input type="search" id="studentSearch" placeholder="搜索姓名 / 序号"></label><label class="checkbox-label"><input type="checkbox" id="onlyUnrated"> 只看未评分</label><button class="text-button" id="clearButton">清空评分</button></div>
+      <p class="list-hint">分数为 60–100 的整数。分档名额满后，该档暂停选择；可先清除一人的分数再调整。</p>
+      <div class="student-list" id="studentList"></div><p class="empty-state hidden" id="emptySearch">没有符合筛选条件的同学。</p>
+      <div class="submit-bar"><div><strong id="submitStatus">完成全班评价后即可提交</strong><p id="submitHelp">记得给自己打分。</p></div><button class="button" id="reviewButton" disabled>检查并提交 <span aria-hidden="true">→</span></button></div>
+    </section>
+    <section class="card success-card hidden" id="successSection"><div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow" id="successEyebrow">评价已提交</p><h2>谢谢你的认真评价。</h2><p id="successDescription">你的评分已完整记录，无需重复提交。</p><div class="receipt"><span>提交人</span><strong id="receiptName"></strong><span>提交时间</span><strong id="receiptTime"></strong><span>回执编号</span><code id="receiptCode"></code></div><button class="button secondary" id="doneSwitch">返回身份选择</button></section>
+    <aside class="rules-note"><h2>分数怎样分配？</h2><p>90–100、80–89、70–79、60–69 分四档，比例依次为 20%、30%、30%、20%。本班 67 人，对应 13、20、20、14 人。人数按最大余数法取整；余数相同优先较低分档。所有同学都需被评价，包含本人。</p><p>老师只用实际收到的评分计算平均分。未参与评价的同学不会被算成 0 分。</p></aside>
+  </main>
+  <footer class="site-footer"><span>独立评价 · 客观打分</span><a href="admin.html">教师后台</a></footer>
+  <dialog id="reviewDialog"><div class="dialog-content"><p class="eyebrow">提交前确认</p><h2>检查这份评价</h2><p id="reviewSummary"></p><div class="review-breakdown" id="reviewBreakdown"></div><p class="muted">提交后不能修改。平均分和个人提交状态仅老师可见。</p><p class="error hidden" id="submitError" role="alert"></p><div class="dialog-actions"><button class="button secondary" id="cancelReview">返回修改</button><button class="button" id="confirmSubmit">确认提交</button></div></div></dialog>
+  <div class="toast hidden" id="toast" role="status"></div>
+  <script src="assets/config.js"></script><script src="assets/data.js"></script><script src="assets/rules.js"></script><script src="assets/api.js"></script><script src="assets/app.js"></script>
+</body>
+</html>

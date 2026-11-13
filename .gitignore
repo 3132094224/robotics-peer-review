@@ -1,0 +1,7 @@
+node_modules/
+.env*
+teacher-only/
+test-results/
+*.zip
+*.xlsx
+*.csv

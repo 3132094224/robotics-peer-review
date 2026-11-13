@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1958da"><title>教师后台 · 课程全班互评</title><link rel="stylesheet" href="assets/style.css"></head>
+<body>
+  <header class="site-header"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">评</span><span>课程评价<span class="brand-en">TEACHER CONSOLE</span></span></a><a class="subtle-link" href="index.html">返回学生页面 ↗</a></header>
+  <main class="container admin-container">
+    <section class="admin-intro"><p class="eyebrow">智能机器人导航与控制</p><h1>每一份评价，清楚呈现。</h1><p class="lead">查看平均分、跟进提交进度，一处完成。</p></section>
+    <div class="notice hidden" id="modeNotice" role="status"></div>
+    <section class="card login-card" id="loginSection"><div class="section-heading"><span class="step-number">↗</span><div><h2>教师登录</h2><p>使用你在评分服务中创建的老师账号。</p></div></div><form id="loginForm"><label>邮箱<input id="emailInput" type="email" autocomplete="username" required placeholder="老师账号邮箱"></label><label>密码<input id="passwordInput" type="password" autocomplete="current-password" required placeholder="输入登录密码"></label><p class="error hidden" id="loginError" role="alert"></p><button class="button full-width" id="loginButton">登录并查看结果</button></form><a class="demo-link hidden" id="demoLink" href="?demo=1">尚未配置？先体验后台统计 →</a></section>
+    <section class="hidden" id="dashboardSection">
+      <div class="dashboard-heading"><div><h2>全班评价概览</h2><p class="muted" id="lastUpdated"></p></div><div class="action-group"><button class="button secondary compact" id="refreshButton">刷新数据</button><button class="text-button" id="logoutButton">退出登录</button></div></div>
+      <p class="error hidden" id="dashboardError" role="alert"></p>
+      <div class="stat-grid"><article class="stat-card"><span>班级人数</span><strong id="statTotal">—</strong><small>评价对象包含本人</small></article><article class="stat-card"><span>已提交</span><strong id="statSubmitted">—</strong><small id="statPercent">—</small></article><article class="stat-card"><span>未提交</span><strong id="statMissing">—</strong><small>可在下方查看具体姓名</small></article><article class="stat-card"><span>收集状态</span><strong class="status-word" id="activityStatus">—</strong><button class="text-button" id="toggleActivity">—</button></article></div>
+      <div class="formula-note"><span class="formula-symbol" aria-hidden="true">Σ</span><div><strong>平均分 = 实际收到的评分总和 ÷ 实际收到的评分份数</strong><p>未参与者不记为 0 分。无人提交时显示“暂无评分”。自评分正常计入。</p></div></div>
+      <div class="dashboard-toolbar"><div class="tabs" role="tablist" aria-label="结果视图"><button class="tab active" id="summaryTab" role="tab" aria-selected="true" aria-controls="summaryPanel">平均分汇总</button><button class="tab" id="missingTab" role="tab" aria-selected="false" aria-controls="missingPanel">未提交名单 <span id="missingBadge">0</span></button></div><div class="action-group"><button class="button secondary compact" id="exportButton">导出平均分 CSV</button><button class="button secondary compact" id="exportMissing">导出未提交名单</button></div></div>
+      <div class="card results-card"><div class="results-toolbar"><label class="search-label"><span class="sr-only">搜索姓名或序号</span><input type="search" id="adminSearch" placeholder="搜索姓名 / 序号"></label><label class="sort-label" id="sortLabel">排序<select id="sortSelect"><option value="order">点名册顺序</option><option value="average">平均分从高到低</option></select></label></div><div id="summaryPanel" role="tabpanel" aria-labelledby="summaryTab"><div class="table-scroll"><table><thead><tr><th>序号</th><th>姓名</th><th>平均分</th><th>评分总和</th><th>收到份数</th><th>本人提交状态</th></tr></thead><tbody id="summaryBody"></tbody></table></div></div><div id="missingPanel" role="tabpanel" aria-labelledby="missingTab" class="hidden"><p class="panel-description">以下同学尚未提交完整问卷。他们仍然可以收到其他同学的评分，平均分正常计算。</p><div class="missing-grid" id="missingList"></div></div><p class="empty-state hidden" id="adminEmpty">没有符合条件的同学。</p></div>
+    </section>
+  </main>
+  <footer class="site-footer"><span>教师后台 · 评分数据仅授权老师可见</span><a href="index.html">学生页面</a></footer>
+  <dialog id="activityDialog"><div class="dialog-content"><h2 id="activityDialogTitle">暂停提交？</h2><p id="activityDialogText"></p><p class="error hidden" id="activityError" role="alert"></p><div class="dialog-actions"><button class="button secondary" id="cancelActivity">取消</button><button class="button" id="confirmActivity">确认</button></div></div></dialog>
+  <script src="assets/config.js"></script><script src="assets/data.js"></script><script src="assets/rules.js"></script><script src="assets/api.js"></script><script src="assets/admin.js"></script>
+</body>
+</html>
