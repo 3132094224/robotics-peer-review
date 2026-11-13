@@ -16,3 +16,5 @@ dialog{border:1px solid var(--line);border-radius:18px;padding:0;width:calc(100%
 .name-only-form{grid-template-columns:minmax(0,1fr);max-width:560px}
 
 .success-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+
+.button.danger{background:var(--red);color:#fff}.button.danger:hover:not(:disabled){background:#a82b3d}.button.danger-outline{background:#fff;color:var(--red);border-color:#e6b7bf}.button.danger-outline:hover:not(:disabled){background:#fff0f2}.danger-text{color:var(--red)}

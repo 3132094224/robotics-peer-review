@@ -22,7 +22,9 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 401 && token) { session = null; throw new Error("登录已失效，请重新登录"); }
-        throw new Error(data.message || data.error_description || data.msg || `请求失败（${res.status}）`);
+        const error = new Error(data.message || data.error_description || data.msg || `请求失败（${res.status}）`);
+        error.code = data.details;
+        throw error;
       }
       return data;
     } catch (error) {
@@ -43,8 +45,8 @@
   window.ReviewAPI = {
     ready,
     identity: id => rpc("review_identity", { p_rater_id: id }),
-    submit: (id, version, scores) => rpc("review_submit", {
-      p_rater_id: id, p_roster_version: version, p_scores: scores,
+    submit: (id, version, scores, roundId = "initial") => rpc("review_submit", {
+      p_rater_id: id, p_roster_version: version, p_scores: scores, p_round_id: roundId,
     }),
     async signIn(email, password) {
       const data = await request("/auth/v1/token?grant_type=password", { body: { email, password } });
@@ -57,5 +59,6 @@
     },
     async dashboard() { return rpc("review_dashboard", {}, await adminToken()); },
     async setAccepting(value) { return rpc("review_set_accepting", { p_accepting: value }, await adminToken()); },
+    async reset(roundId) { return rpc("review_reset", { p_confirm: true, p_expected_round_id: roundId }, await adminToken()); },
   };
 })();

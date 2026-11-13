@@ -13,7 +13,8 @@ create table public.review_settings (
   singleton boolean primary key default true check (singleton),
   course_title text not null,
   roster_version text not null,
-  accepting boolean not null default true
+  accepting boolean not null default true,
+  round_id text not null default 'initial'
 );
 create table public.review_admins (
   email text primary key check (email = lower(email))
@@ -67,7 +68,7 @@ declare v_result jsonb;
 begin
   perform public.review_check_student(p_rater_id);
   select jsonb_build_object(
-    'name', s.name, 'accepting', cfg.accepting, 'roster_version', cfg.roster_version,
+    'name', s.name, 'accepting', cfg.accepting, 'roster_version', cfg.roster_version, 'round_id', cfg.round_id,
     'quotas', public.review_quotas((select count(*)::integer from public.review_students)),
     'submitted', b.rater_id is not null, 'submitted_at', b.submitted_at, 'receipt', b.receipt
   ) into v_result
@@ -78,7 +79,7 @@ begin
 end;
 $$;
 
-create function public.review_submit(p_rater_id text, p_code text default '', p_roster_version text default null, p_scores jsonb default null) returns jsonb
+create function public.review_submit(p_rater_id text, p_round_id text default 'initial', p_roster_version text default null, p_scores jsonb default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   v_settings public.review_settings%rowtype;
@@ -90,6 +91,9 @@ begin
   perform public.review_check_student(p_rater_id);
   select * into v_settings from public.review_settings where singleton for share;
   if not found then raise exception '活动尚未初始化'; end if;
+  if p_round_id is distinct from v_settings.round_id then
+    raise exception '老师已清空上一轮评分，请返回重新开始评价' using detail = 'REVIEW_ROUND_CHANGED';
+  end if;
   if p_roster_version is distinct from v_settings.roster_version then raise exception '名单版本已变化，请刷新页面'; end if;
   if not v_settings.accepting then raise exception '本次互评已经结束'; end if;
   select count(*)::integer into v_n from public.review_students;
@@ -144,6 +148,7 @@ begin
     'submitted_count', (select count(*) from public.review_ballots),
     'accepting', (select accepting from public.review_settings where singleton),
     'roster_version', (select roster_version from public.review_settings where singleton),
+    'round_id', (select round_id from public.review_settings where singleton),
     'refreshed_at', now()
   ) into v_result;
   return v_result;
@@ -161,6 +166,24 @@ begin
 end;
 $$;
 
+-- 仅允许老师清空当前轮。行锁与提交函数的 FOR SHARE 配合，防止旧轮并发提交混入新轮。
+create function public.review_reset(p_confirm boolean, p_expected_round_id text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare v_current_round text; v_new_round text; v_deleted integer;
+begin
+  if not public.review_is_admin() then raise exception '没有管理权限'; end if;
+  if p_confirm is distinct from true then raise exception '请先确认清空全部评分'; end if;
+  select round_id into v_current_round from public.review_settings where singleton for update;
+  if not found then raise exception '活动尚未初始化'; end if;
+  if p_expected_round_id is distinct from v_current_round then raise exception '评分轮次已更新，请刷新后台后重试'; end if;
+  delete from public.review_ballots;
+  get diagnostics v_deleted = row_count;
+  v_new_round := gen_random_uuid()::text;
+  update public.review_settings set round_id = v_new_round, accepting = true where singleton;
+  return jsonb_build_object('cleared_count', v_deleted, 'round_id', v_new_round, 'accepting', true);
+end;
+$$;
+
 -- PostgreSQL 函数默认授予 PUBLIC 执行权，必须逐个收回。
 revoke all on function public.review_is_admin() from public, anon, authenticated;
 revoke all on function public.review_quotas(integer) from public, anon, authenticated;
@@ -169,9 +192,11 @@ revoke all on function public.review_identity(text,text) from public, anon, auth
 revoke all on function public.review_submit(text,text,text,jsonb) from public, anon, authenticated;
 revoke all on function public.review_dashboard() from public, anon, authenticated;
 revoke all on function public.review_set_accepting(boolean) from public, anon, authenticated;
+revoke all on function public.review_reset(boolean,text) from public, anon, authenticated;
 grant execute on function public.review_identity(text,text) to anon, authenticated;
 grant execute on function public.review_submit(text,text,text,jsonb) to anon, authenticated;
 grant execute on function public.review_dashboard() to authenticated;
 grant execute on function public.review_set_accepting(boolean) to authenticated;
+grant execute on function public.review_reset(boolean,text) to authenticated;
 notify pgrst, 'reload schema';
 commit;

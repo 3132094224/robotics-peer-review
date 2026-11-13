@@ -4,7 +4,7 @@
   const R = window.ReviewRules, API = window.ReviewAPI, roster = window.REVIEW_ROSTER;
   const students = roster.students, demo = new URLSearchParams(location.search).get("demo") === "1";
   const demoKey = "robotics-review.demo.ballots." + roster.version;
-  let dashboard = null, activeTab = "summary", busy = false;
+  let dashboard = null, activeTab = "summary", busy = false, resetting = false, resetRound = null;
   function errorAt(id, error) { $(id).textContent = error.message || String(error); $(id).classList.remove("hidden"); }
   function getDemoDashboard() {
     let ballots;
@@ -14,7 +14,7 @@
       id: s.id, sort_order: s.order, name: s.name, total: s.total, received_count: s.count,
       average: s.average, submitted: s.submitted, submitted_at: ballots.find(b => b.rater_id === s.id)?.submitted_at || null,
     }));
-    return { students: rows, total_students: students.length, submitted_count: ballots.length, accepting: localStorage.getItem(demoKey + ".closed") !== "1", roster_version: roster.version, refreshed_at: new Date().toISOString() };
+    return { students: rows, total_students: students.length, submitted_count: ballots.length, accepting: localStorage.getItem(demoKey + ".closed") !== "1", round_id: localStorage.getItem(demoKey + ".round") || "initial", roster_version: roster.version, refreshed_at: new Date().toISOString() };
   }
   function validateDashboard(data) {
     if (data.roster_version !== roster.version) throw new Error("后台名单与页面版本不一致，请刷新或检查部署配置。");
@@ -24,12 +24,12 @@
   }
   async function refresh() {
     if (busy) return;
-    busy = true; $("refreshButton").disabled = true; $("dashboardError").classList.add("hidden");
+    busy = true; $("refreshButton").disabled = true; $("resetButton").disabled = true; $("dashboardError").classList.add("hidden");
     try {
       const next = demo ? getDemoDashboard() : await API.dashboard(); validateDashboard(next); dashboard = next;
       $("loginSection").classList.add("hidden"); $("dashboardSection").classList.remove("hidden"); render();
     } catch (error) { errorAt(dashboard ? "dashboardError" : "loginError", error); }
-    finally { busy = false; $("refreshButton").disabled = false; }
+    finally { busy = false; $("refreshButton").disabled = false; $("resetButton").disabled = resetting || !dashboard?.round_id; }
   }
   function filteredRows() {
     const query = $("adminSearch").value.trim().toLowerCase();
@@ -119,9 +119,37 @@
     } catch (error) { errorAt("activityError", error); }
     finally { $("confirmActivity").disabled = false; }
   });
+  $("resetButton").addEventListener("click", () => {
+    if (busy || resetting || !dashboard?.round_id) return;
+    resetRound = dashboard.round_id;
+    $("resetSummary").textContent = `即将删除全班 ${dashboard.submitted_count} 份已提交的评分。`;
+    $("resetError").classList.add("hidden"); $("resetDialog").showModal();
+  });
+  $("cancelReset").addEventListener("click", () => { if (!resetting) $("resetDialog").close(); });
+  $("resetDialog").addEventListener("cancel", event => { if (resetting) event.preventDefault(); });
+  $("confirmReset").addEventListener("click", async () => {
+    if (resetting || !resetRound) return;
+    resetting = true; $("confirmReset").disabled = true; $("cancelReset").disabled = true; $("resetButton").disabled = true;
+    $("confirmReset").textContent = "正在清空…"; $("resetError").classList.add("hidden");
+    try {
+      if (demo) {
+        if ((localStorage.getItem(demoKey + ".round") || "initial") !== resetRound) throw new Error("评分轮次已更新，请刷新后台后重试");
+        localStorage.setItem(demoKey, "[]");
+        localStorage.setItem(demoKey + ".closed", "0");
+        localStorage.setItem(demoKey + ".round", crypto.randomUUID());
+      } else await API.reset(resetRound);
+      $("resetDialog").close(); $("adminSearch").value = ""; $("sortSelect").value = "order"; setTab("summary");
+      await refresh();
+    } catch (error) {
+      errorAt("resetError", new Error(error.message + "。如请求超时，请取消并刷新后台核对结果后再决定是否重试。"));
+    } finally {
+      resetting = false; $("confirmReset").disabled = false; $("cancelReset").disabled = false;
+      $("resetButton").disabled = !dashboard?.round_id; $("confirmReset").textContent = "确认清空";
+    }
+  });
   if (demo) {
     $("modeNotice").textContent = "本机体验：只统计同一浏览器体验模式下的提交，不代表正式评分结果。"; $("modeNotice").classList.remove("hidden");
     document.querySelectorAll('a[href="index.html"],a[href="./"]').forEach(a => a.href = "index.html?demo=1"); refresh();
   } else if (!API.ready) { $("demoLink").classList.remove("hidden"); $("loginButton").disabled = true; }
-  window.addEventListener("storage", event => { if (demo && (event.key === demoKey || event.key === demoKey + ".closed")) refresh(); });
+  window.addEventListener("storage", event => { if (demo && (event.key === demoKey || event.key === demoKey + ".closed" || event.key === demoKey + ".round")) refresh(); });
 })();

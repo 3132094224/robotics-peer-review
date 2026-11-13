@@ -5,10 +5,24 @@
   const roster = window.REVIEW_ROSTER, students = roster.students;
   const demo = new URLSearchParams(location.search).get("demo") === "1";
   const demoBallotsKey = "robotics-review.demo.ballots." + roster.version;
-  let me = null, scores = {}, submitting = false, saveAvailable = true;
+  let me = null, scores = {}, submitting = false, saveAvailable = true, roundId = "initial";
   let toastTimer;
   const rowElements = new Map();
-  const draftKey = () => "robotics-review.draft." + roster.version + "." + (demo ? "demo." : "live.") + me.id;
+  const draftPrefix = "robotics-review.draft." + roster.version + "." + (demo ? "demo." : "live.");
+  const draftKey = () => draftPrefix + (roundId === "initial" ? "" : roundId + ".") + me.id;
+  function selectRound(value) {
+    roundId = value || "initial";
+    if (roundId === "initial") return;
+    try {
+      const keepPrefix = draftPrefix + roundId + ".";
+      const oldKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(draftPrefix) && !key.startsWith(keepPrefix)) oldKeys.push(key);
+      }
+      oldKeys.forEach(key => localStorage.removeItem(key));
+    } catch (_) { /* 无法清除旧缓存时，新轮的草稿键仍不会读取旧轮。 */ }
+  }
   function showError(id, error) { $(id).textContent = error.message || String(error); $(id).classList.remove("hidden"); }
   function toast(message) {
     $("toast").textContent = message; $("toast").classList.remove("hidden");
@@ -136,13 +150,14 @@
         const ballot = readStorage(demoBallotsKey, []).find(b => b.rater_id === student.id);
         let accepting = true;
         try { accepting = localStorage.getItem(demoBallotsKey + ".closed") !== "1"; } catch (_) {}
-        status = { accepting, roster_version: roster.version, submitted: !!ballot, ...ballot };
+        status = { accepting, roster_version: roster.version, round_id: localStorage.getItem(demoBallotsKey + ".round") || "initial", submitted: !!ballot, ...ballot };
       } else {
         status = await API.identity(student.id);
       }
       if (status.roster_version !== roster.version) throw new Error("名单版本不一致，请刷新页面；仍不一致时请联系老师。");
       if (!demo && JSON.stringify(status.quotas) !== JSON.stringify(R.quotas(students.length))) throw new Error("评分规则与后台不一致，请联系老师。");
       me = student;
+      selectRound(status.round_id);
       if (!status.accepting) throw new Error("本次互评已暂停提交，请联系老师。");
       const draft = readStorage(draftKey(), {}); scores = {};
       for (const s of students) if (R.bandIndex(draft[s.id]) >= 0) scores[s.id] = draft[s.id];
@@ -185,13 +200,21 @@
     try {
       let result;
       if (demo) {
+        if ((localStorage.getItem(demoBallotsKey + ".round") || "initial") !== roundId) {
+          const error = new Error("老师已清空上一轮评分，请返回重新开始评价"); error.code = "REVIEW_ROUND_CHANGED"; throw error;
+        }
         const ballots = readStorage(demoBallotsKey, []); const existing = ballots.find(b => b.rater_id === me.id);
         result = { rater_id: me.id, scores: { ...scores }, submitted_at: new Date().toISOString(), receipt: "DEMO-" + Date.now().toString(36) };
         const updated = existing ? ballots.map(b => b.rater_id === me.id ? result : b) : [...ballots, result];
         localStorage.setItem(demoBallotsKey, JSON.stringify(updated));
-      } else result = await API.submit(me.id, roster.version, scores);
+      } else result = await API.submit(me.id, roster.version, scores, roundId);
       $("reviewDialog").close(); success(result);
-    } catch (error) { showError("submitError", error); }
+    } catch (error) {
+      if (error.code === "REVIEW_ROUND_CHANGED") {
+        try { localStorage.removeItem(draftKey()); } catch (_) {}
+        $("reviewDialog").close(); resetSections(); showError("identityError", error);
+      } else showError("submitError", error);
+    }
     finally { submitting = false; $("confirmSubmit").disabled = false; $("cancelReview").disabled = false; $("confirmSubmit").textContent = "确认提交"; }
   });
   window.addEventListener("beforeunload", event => {
