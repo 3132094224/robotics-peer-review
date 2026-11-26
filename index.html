@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1958da">
   <meta name="description" content="智能机器人导航与控制课程全班互评。">
   <title>课程全班互评</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/style.css?v=cloud-save-20261126">
 </head>
 <body>
   <header class="site-header"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">评</span><span>课程评价<span class="brand-en">CLASS REVIEW</span></span></a><a class="subtle-link" href="admin.html">教师后台 <span aria-hidden="true">↗</span></a></header>
@@ -25,10 +25,11 @@
     <section id="scoringSection" class="hidden">
       <div class="scoring-top"><div><p class="eyebrow">正在以 <strong id="currentName"></strong> 的身份评价</p><h2>把合适的分数，给每位同学。</h2></div><button class="text-button" id="switchButton">切换身份</button></div>
       <div class="quota-sticky"><div class="quota-grid" id="quotaGrid"></div><div class="progress-line"><span id="progressText" aria-live="polite">已评 0 / 67</span><span class="save-state" id="saveState">草稿会保存在当前浏览器</span></div><div class="progress-track"><div id="progressFill"></div></div></div>
-      <div class="toolbar"><label class="search-label"><span class="sr-only">搜索姓名或序号</span><input type="search" id="studentSearch" placeholder="搜索姓名 / 序号"></label><label class="checkbox-label"><input type="checkbox" id="onlyUnrated"> 只看未评分</label><button class="text-button" id="clearButton">清空评分</button></div>
+      <div class="toolbar"><label class="search-label"><span class="sr-only">搜索姓名或序号</span><input type="search" id="studentSearch" placeholder="搜索姓名 / 序号"></label><label class="checkbox-label"><input type="checkbox" id="onlyUnrated"> 只看未评分</label><button class="button secondary compact" id="saveProgressTop">保存进度</button><button class="text-button" id="clearButton">清空评分</button></div>
       <p class="list-hint">分数为 60–100 的整数。分档名额满后，该档暂停选择；可先清除一人的分数再调整。</p>
       <div class="student-list" id="studentList"></div><p class="empty-state hidden" id="emptySearch">没有符合筛选条件的同学。</p>
-      <div class="submit-bar"><div><strong id="submitStatus">完成全班评价后即可提交</strong><p id="submitHelp">记得给自己打分。</p></div><button class="button" id="reviewButton" disabled>检查并提交 <span aria-hidden="true">→</span></button></div>
+      <div class="submit-bar"><div><strong id="submitStatus">完成全班评价后即可提交</strong><p id="submitHelp">记得给自己打分。</p><p class="save-help">没评完也可先保存进度，下次选择同一姓名即可继续。</p></div><div class="save-actions"><button class="button secondary" id="saveProgressButton">保存进度</button><button class="button" id="reviewButton" disabled>检查并提交 <span aria-hidden="true">→</span></button></div></div>
+      <p class="error hidden" id="saveProgressError" role="alert"></p>
     </section>
     <section class="card success-card hidden" id="successSection"><div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow" id="successEyebrow">评价已提交</p><h2>谢谢你的认真评价。</h2><p id="successDescription">评分已保存，可以继续修改并重新提交。</p><div class="receipt"><span>提交人</span><strong id="receiptName"></strong><span>提交时间</span><strong id="receiptTime"></strong><span>回执编号</span><code id="receiptCode"></code></div><div class="success-actions"><button class="button" id="doneEdit">继续修改评分</button><button class="button secondary" id="doneSwitch">返回姓名选择</button></div></section>
     <aside class="rules-note"><h2>分数怎样分配？</h2><p>90–100、80–89、70–79、60–69 分四档，比例依次为 20%、30%、30%、20%。本班 67 人，对应 13、20、20、14 人。人数按最大余数法取整；余数相同优先较低分档。所有同学都需被评价，包含本人。</p><p>老师只用实际收到的评分计算平均分。未参与评价的同学不会被算成 0 分。</p></aside>
@@ -36,6 +37,7 @@
   <footer class="site-footer"><span>独立评价 · 客观打分</span><a href="admin.html">教师后台</a></footer>
   <dialog id="reviewDialog"><div class="dialog-content"><p class="eyebrow">提交前确认</p><h2>检查这份评价</h2><p id="reviewSummary"></p><div class="review-breakdown" id="reviewBreakdown"></div><p class="muted">可以重复提交，后台以你最后一次完整提交为准，不重复计票。平均分仅老师可见。</p><p class="error hidden" id="submitError" role="alert"></p><div class="dialog-actions"><button class="button secondary" id="cancelReview">返回修改</button><button class="button" id="confirmSubmit">确认提交</button></div></div></dialog>
   <div class="toast hidden" id="toast" role="status"></div>
-  <script src="assets/config.js"></script><script src="assets/data.js"></script><script src="assets/rules.js"></script><script src="assets/api.js?v=reset-1"></script><script src="assets/app.js?v=reset-1"></script>
+  <dialog id="restoreDialog"><div class="dialog-content"><h2>选择要继续的评分进度</h2><p id="restoreDescription"></p><p class="muted">这台设备还有未上传的修改，后台也有另一份进度。请选择要继续填写的版本。</p><div class="dialog-actions"><button class="button secondary" id="restoreLocal">继续本机进度</button><button class="button" id="restoreCloud">使用后台进度</button></div></div></dialog>
+  <script src="assets/config.js"></script><script src="assets/data.js"></script><script src="assets/rules.js"></script><script src="assets/api.js?v=cloud-save-20261126"></script><script src="assets/app.js?v=cloud-save-20261126"></script>
 </body>
 </html>

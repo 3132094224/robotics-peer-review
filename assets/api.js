@@ -45,6 +45,9 @@
   window.ReviewAPI = {
     ready,
     identity: id => rpc("review_identity", { p_rater_id: id }),
+    saveDraft: (id, version, scores, roundId) => rpc("review_save_draft", {
+      p_rater_id: id, p_roster_version: version, p_scores: scores, p_round_id: roundId,
+    }),
     submit: (id, version, scores, roundId = "initial") => rpc("review_submit", {
       p_rater_id: id, p_roster_version: version, p_scores: scores, p_round_id: roundId,
     }),

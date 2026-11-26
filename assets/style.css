@@ -18,3 +18,5 @@ dialog{border:1px solid var(--line);border-radius:18px;padding:0;width:calc(100%
 .success-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 
 .button.danger{background:var(--red);color:#fff}.button.danger:hover:not(:disabled){background:#a82b3d}.button.danger-outline{background:#fff;color:var(--red);border-color:#e6b7bf}.button.danger-outline:hover:not(:disabled){background:#fff0f2}.danger-text{color:var(--red)}
+
+.save-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.submit-bar .save-help{font-size:11px}.save-state{max-width:65%;text-align:right}@media(max-width:760px){.save-actions{width:100%}.save-actions .button{flex:1;width:auto}.save-state{max-width:62%}}

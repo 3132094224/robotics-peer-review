@@ -135,6 +135,7 @@
       if (demo) {
         if ((localStorage.getItem(demoKey + ".round") || "initial") !== resetRound) throw new Error("评分轮次已更新，请刷新后台后重试");
         localStorage.setItem(demoKey, "[]");
+        localStorage.setItem(demoKey + ".drafts", "{}");
         localStorage.setItem(demoKey + ".closed", "0");
         localStorage.setItem(demoKey + ".round", crypto.randomUUID());
       } else await API.reset(resetRound);
